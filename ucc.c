@@ -116,6 +116,13 @@ void tokenize(char *p) {
       p++;
       continue;
     }
+    if ('a' <= *p && &p <= 'z') {
+      tokens[i].ty = TK_IDENT;
+      tokens[i].input = p;
+      i++;
+      p++;
+      continue;
+    }
 
     if (isdigit(*p)) {
       tokens[i].ty = TK_NUM;
