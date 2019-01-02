@@ -5,6 +5,7 @@
 
 enum {
   TK_NUM = 256,
+  TK_IDENT,
   TK_EOF,
 };
 
@@ -116,7 +117,8 @@ void tokenize(char *p) {
       p++;
       continue;
     }
-    if ('a' <= *p && &p <= 'z') {
+
+    if ('a' <= *p && *p <= 'z') {
       tokens[i].ty = TK_IDENT;
       tokens[i].input = p;
       i++;
