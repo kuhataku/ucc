@@ -1,4 +1,5 @@
-CC=gcc
+CC=clang
+CFLAGS=-g
 
 ucc: ucc.c
 
