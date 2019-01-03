@@ -1,6 +1,8 @@
 enum {
   ND_NUM = 256,
   ND_IDENT,
+  ND_EQUAL,
+  ND_NEQUAL,
 };
 
 typedef struct Node {

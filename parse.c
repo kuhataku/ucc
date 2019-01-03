@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "ucc.h"
 
 Token tokens[100];
@@ -11,6 +12,8 @@ static int c = 0;
 enum {
   TK_NUM = 256,
   TK_IDENT,
+  TK_EQUAL,
+  TK_NEQUAL,
   TK_EOF,
 };
 
@@ -84,6 +87,14 @@ Node *expr() {
     pos++;
     return new_node('-', lhs, expr());
   }
+  if (tokens[pos].ty == TK_EQUAL) {
+    pos++;
+    return new_node(ND_EQUAL, lhs, expr());
+  }
+  if (tokens[pos].ty == TK_NEQUAL) {
+    pos++;
+    return new_node(ND_NEQUAL, lhs, expr());
+  }
   return lhs;
 }
 
@@ -115,6 +126,22 @@ void tokenize(char *p) {
   while (*p) {
     if (isspace(*p)) {
       p++;
+      continue;
+    }
+
+    if (!strncmp(p, "==", 2)) {
+      tokens[i].ty = TK_EQUAL;
+      tokens[i].input = p;
+      i++;
+      p+=2;
+      continue;
+    }
+
+    if (!strncmp(p, "!=", 2)) {
+      tokens[i].ty = TK_NEQUAL;
+      tokens[i].input = p;
+      i++;
+      p+=2;
       continue;
     }
 
