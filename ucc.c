@@ -1,7 +1,5 @@
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "ucc.h"
 
 void error(char *message, int i) {
