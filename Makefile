@@ -1,7 +1,11 @@
 CC=clang
-CFLAGS=-g
+CFLAGS=-g -Wall -std=c11
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-ucc: ucc.c
+ucc: $(OBJS)
+
+$(OBJS): ucc.h
 
 test: ucc
 	./test.sh
