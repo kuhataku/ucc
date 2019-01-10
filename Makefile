@@ -8,6 +8,7 @@ ucc: $(OBJS)
 $(OBJS): ucc.h
 
 test: ucc
+	./ucc -test
 	./test.sh
 
 format: ucc.c
