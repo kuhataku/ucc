@@ -19,6 +19,17 @@ typedef struct {
   char *input;
 } Token;
 
+typedef struct {
+  void **data;
+  int capacity;
+  int len;
+} Vector;
+
+typedef struct {
+  Vector *keys;
+  Vector *vals;
+} Map;
+
 extern Token tokens[100];
 extern Node *code[100];
 
