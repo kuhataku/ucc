@@ -70,3 +70,21 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
+void gen_ir(Vector *code) {
+  printf(".intel_syntax noprefix\n");
+  printf(".global _main\n");
+  printf("_main:\n");
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, 208\n");
+
+  for (int i = 0; code->data[i]; i++) {
+    gen(code->data[i]);
+    printf("  pop rax\n");
+  }
+
+  printf("  mov rsp, rbp\n");
+  printf("  pop rbp\n");
+  printf("  ret\n");
+}
+

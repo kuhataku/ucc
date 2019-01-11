@@ -30,12 +30,9 @@ typedef struct {
   Vector *vals;
 } Map;
 
-extern Token tokens[100];
-extern Node *code[100];
-
-void program();
-void tokenize(char *p);
-void gen(Node *node);
+Vector *program();
+Vector *tokenize(char *p);
+void gen_ir(Vector *code);
 void error(char *message, int i);
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);

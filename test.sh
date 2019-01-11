@@ -3,6 +3,7 @@ try() {
   expected="$1"
   input="$2"
 
+  echo "./ucc "$input" > tmp.s"
   ./ucc "$input" > tmp.s
   gcc -g -o tmp tmp.s
   ./tmp

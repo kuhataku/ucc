@@ -1,13 +1,12 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include "ucc.h"
 
-Token tokens[100];
-Node *code[100];
+Vector *tokens;
 
 static int pos = 0;
-static int c = 0;
 
 enum {
   TK_NUM = 256,
@@ -17,10 +16,23 @@ enum {
   TK_EOF,
 };
 
+void error(char *message, int i) {
+  fprintf(stderr, "%s :%s \n", message, ((Token *)tokens->data[i])->input);
+  exit(1);
+}
+
 Node *term();
 Node *mul();
 Node *expr();
 Node *assign();
+
+Token *add_token(Vector *v, int ty, char *input) {
+  Token *t = malloc(sizeof(Token));
+  t->ty = ty;
+  t->input = input;
+  vec_push(v, t);
+  return t;
+}
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -45,16 +57,20 @@ Node *new_node_ident(char *val) {
 }
 
 Node *term() {
-  if (tokens[pos].ty == TK_NUM) {
-    return new_node_num(tokens[pos++].val);
+  Token *token = tokens->data[pos];
+  if (token->ty == TK_NUM) {
+    pos++;
+    return new_node_num(token->val);
   }
-  if (tokens[pos].ty == TK_IDENT) {
-    return new_node_ident(tokens[pos++].input);
+  if (token->ty == TK_IDENT) {
+    pos++;
+    return new_node_ident(token->input);
   }
-  if (tokens[pos].ty == '(') {
+  if (token->ty == '(') {
     pos++;
     Node *node = expr();
-    if (tokens[pos].ty != ')') {
+    token = tokens->data[pos];
+    if (token->ty != ')') {
       error("開きカッコに対応する閉じカッコがありません", pos);
     }
     pos++;
@@ -66,11 +82,12 @@ Node *term() {
 
 Node *mul() {
   Node *lhs = term();
-  if (tokens[pos].ty == '*') {
+  Token *token = tokens->data[pos];
+  if (token->ty == '*') {
     pos++;
     return new_node('*', lhs, mul());
   }
-  if (tokens[pos].ty == '/') {
+  if (token->ty == '/') {
     pos++;
     return new_node('/', lhs, mul());
   }
@@ -79,19 +96,20 @@ Node *mul() {
 
 Node *expr() {
   Node *lhs = mul();
-  if (tokens[pos].ty == '+') {
+  Token *token = tokens->data[pos];
+  if (token->ty == '+') {
     pos++;
     return new_node('+', lhs, expr());
   }
-  if (tokens[pos].ty == '-') {
+  if (token->ty == '-') {
     pos++;
     return new_node('-', lhs, expr());
   }
-  if (tokens[pos].ty == TK_EQUAL) {
+  if (token->ty == TK_EQUAL) {
     pos++;
     return new_node(ND_EQUAL, lhs, expr());
   }
-  if (tokens[pos].ty == TK_NEQUAL) {
+  if (token->ty == TK_NEQUAL) {
     pos++;
     return new_node(ND_NEQUAL, lhs, expr());
   }
@@ -100,29 +118,35 @@ Node *expr() {
 
 Node *assign() {
   Node *lhs = expr();
-  if (tokens[pos].ty == '=') {
+  Token *token = tokens->data[pos];
+  if (token->ty == '=') {
     pos++;
     return new_node('=', lhs, expr());
   }
   return lhs;
 }
 
-void program() {
-  Node *lhs = assign();
-  if (tokens[pos].ty == ';') {
-    pos++;
-    code[c++] = lhs;
+Vector *program() {
+  Vector *code = new_vector();
+  while (1) {
+    Token *token = tokens->data[pos];
+    if (token->ty == TK_EOF) {
+      break;
+    } else {
+      Node *lhs = assign();
+      Token *token = tokens->data[pos];
+      if (token->ty == ';') {
+        pos++;
+        vec_push(code, lhs);
+      }
+    }
   }
-  if (tokens[pos].ty == TK_EOF) {
-    code[c] = NULL;
-    return;
-  } else {
-    program();
-  }
+  vec_push(code, NULL);
+  return code;
 }
 
-void tokenize(char *p) {
-  int i = 0;
+Vector *tokenize(char *p) {
+  tokens = new_vector();
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -130,51 +154,41 @@ void tokenize(char *p) {
     }
 
     if (!strncmp(p, "==", 2)) {
-      tokens[i].ty = TK_EQUAL;
-      tokens[i].input = p;
-      i++;
+      add_token(tokens, TK_EQUAL, p);
       p+=2;
       continue;
     }
 
     if (!strncmp(p, "!=", 2)) {
-      tokens[i].ty = TK_NEQUAL;
-      tokens[i].input = p;
-      i++;
+      add_token(tokens, TK_NEQUAL, p);
       p+=2;
       continue;
     }
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
         *p == ')' || *p == ';' || *p == '=') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
-      i++;
+      add_token(tokens, *p, p);
       p++;
       continue;
     }
 
     if ('a' <= *p && *p <= 'z') {
-      tokens[i].ty = TK_IDENT;
-      tokens[i].input = p;
-      i++;
+      add_token(tokens, TK_IDENT, p);
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = strtol(p, &p, 10);
-      i++;
+      Token *t = add_token(tokens, TK_NUM, p);
+      t->val = strtol(p, &p, 10);
       continue;
     }
 
-    error("トークナイズできません", i);
+    fprintf(stderr, "トークナイズできません %s", p);
     exit(1);
   }
 
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
+  add_token(tokens, TK_EOF, p);
+  return tokens;
 }
 
