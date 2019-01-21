@@ -26,6 +26,14 @@ Node *mul();
 Node *expr();
 Node *assign();
 
+int consume(int ty) {
+  Token *token = tokens->data[pos];
+  if (token->ty != ty)
+    return 0;
+  pos++;
+  return 1;
+}
+
 Token *add_token(Vector *v, int ty, char *input) {
   Token *t = malloc(sizeof(Token));
   t->ty = ty;
@@ -66,14 +74,12 @@ Node *term() {
     pos++;
     return new_node_ident(token->input);
   }
-  if (token->ty == '(') {
-    pos++;
+  
+  if ( consume('(') ) {
     Node *node = expr();
-    token = tokens->data[pos];
-    if (token->ty != ')') {
+    if ( ! consume(')') ) {
       error("開きカッコに対応する閉じカッコがありません", pos);
     }
-    pos++;
     return node;
   }
   error("数値でも開きカッコでもないトークンです", pos);
@@ -82,13 +88,10 @@ Node *term() {
 
 Node *mul() {
   Node *lhs = term();
-  Token *token = tokens->data[pos];
-  if (token->ty == '*') {
-    pos++;
+  if ( consume('*')) {
     return new_node('*', lhs, mul());
   }
-  if (token->ty == '/') {
-    pos++;
+  if ( consume('/')) {
     return new_node('/', lhs, mul());
   }
   return lhs;
@@ -96,21 +99,16 @@ Node *mul() {
 
 Node *expr() {
   Node *lhs = mul();
-  Token *token = tokens->data[pos];
-  if (token->ty == '+') {
-    pos++;
+  if (consume('+')) {
     return new_node('+', lhs, expr());
   }
-  if (token->ty == '-') {
-    pos++;
+  if (consume('-')) {
     return new_node('-', lhs, expr());
   }
-  if (token->ty == TK_EQUAL) {
-    pos++;
+  if (consume(TK_EQUAL)) {
     return new_node(ND_EQUAL, lhs, expr());
   }
-  if (token->ty == TK_NEQUAL) {
-    pos++;
+  if (consume(TK_NEQUAL)) {
     return new_node(ND_NEQUAL, lhs, expr());
   }
   return lhs;
@@ -118,9 +116,7 @@ Node *expr() {
 
 Node *assign() {
   Node *lhs = expr();
-  Token *token = tokens->data[pos];
-  if (token->ty == '=') {
-    pos++;
+  if (consume('=')) {
     return new_node('=', lhs, expr());
   }
   return lhs;
@@ -128,10 +124,7 @@ Node *assign() {
 
 Node *stmt() {
   Node *lhs = assign();
-  Token *token = tokens->data[pos];
-  if (token->ty == ';') {
-    pos++;
-  } else {
+  if ( !consume(';')) {
     error("';'ではないトークンです", pos);
   }
   return lhs;
@@ -139,9 +132,7 @@ Node *stmt() {
 
 Vector *program() {
   Vector *code = new_vector();
-  while (1) {
-    Token *token = tokens->data[pos];
-    if ( token->ty == TK_EOF) break;
+  while (!consume(TK_EOF)) {
     vec_push(code, stmt());
   }
   vec_push(code, NULL);
