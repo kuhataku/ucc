@@ -126,20 +126,23 @@ Node *assign() {
   return lhs;
 }
 
+Node *stmt() {
+  Node *lhs = assign();
+  Token *token = tokens->data[pos];
+  if (token->ty == ';') {
+    pos++;
+  } else {
+    error("';'ではないトークンです", pos);
+  }
+  return lhs;
+}
+
 Vector *program() {
   Vector *code = new_vector();
   while (1) {
     Token *token = tokens->data[pos];
-    if (token->ty == TK_EOF) {
-      break;
-    } else {
-      Node *lhs = assign();
-      Token *token = tokens->data[pos];
-      if (token->ty == ';') {
-        pos++;
-        vec_push(code, lhs);
-      }
-    }
+    if ( token->ty == TK_EOF) break;
+    vec_push(code, stmt());
   }
   vec_push(code, NULL);
   return code;
