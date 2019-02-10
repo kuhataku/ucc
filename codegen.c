@@ -1,11 +1,21 @@
 #include <stdio.h>
 #include "ucc.h"
 
+static Map *vars;
+static int bpoff = 8;
+
 void gen_lval(Node *node) {
   if (node->ty == ND_IDENT) {
-    printf(" mov rax, rbp\n");
-    printf(" sub rax, %d\n", ('z' - node->name + 1) * 8);
-    printf(" push rax\n");
+    int off = (intptr_t)map_get(vars, node->name);
+    if ( off == NULL) {
+      off = bpoff;
+      map_put(vars, node->name, (void *)(intptr_t)bpoff);
+      bpoff += 8;
+      printf("  sub rsp, 8\n");
+    }
+    printf("  mov rax, rbp\n");
+    printf("  sub rax, %d\n", off);
+    printf("  push rax\n");
     return;
   }
   fprintf(stderr, "代入の左辺値が変数ではありません\n");
@@ -71,12 +81,14 @@ void gen(Node *node) {
 }
 
 void gen_ir(Vector *code) {
+
+  vars = new_map();
+
   printf(".intel_syntax noprefix\n");
   printf(".global _main\n");
   printf("_main:\n");
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
 
   for (int i = 0; code->data[i]; i++) {
     gen(code->data[i]);

@@ -5,6 +5,7 @@
 #include "ucc.h"
 
 Vector *tokens;
+Map *keywords;
 
 static int pos = 0;
 
@@ -60,7 +61,7 @@ Node *new_node_num(int val) {
 Node *new_node_ident(char *val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
-  node->name = *val;
+  node->name = val;
   return node;
 }
 
@@ -72,7 +73,7 @@ Node *term() {
   }
   if (token->ty == TK_IDENT) {
     pos++;
-    return new_node_ident(token->input);
+    return new_node_ident(token->name);
   }
   
   if ( consume('(') ) {
@@ -141,6 +142,7 @@ Vector *program() {
 
 Vector *tokenize(char *p) {
   tokens = new_vector();
+  keywords = new_map();
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -166,15 +168,25 @@ Vector *tokenize(char *p) {
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
-      add_token(tokens, TK_IDENT, p);
-      p++;
-      continue;
-    }
-
     if (isdigit(*p)) {
       Token *t = add_token(tokens, TK_NUM, p);
       t->val = strtol(p, &p, 10);
+      continue;
+    }
+
+    if (isalpha(*p) || *p == '_') {
+      int len = 1;
+      while (isalpha(p[len]) || isdigit(p[len] || p[len] == '_') ) {
+        len++;
+      }
+      char *name = strndup(p, len);
+      int ty = (intptr_t)map_get(keywords, name);
+      if ( !ty ) {
+        ty = TK_IDENT;
+      }
+      Token *t = add_token(tokens, TK_IDENT, p);
+      t->name = name;
+      p+=len;
       continue;
     }
 

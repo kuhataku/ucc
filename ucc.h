@@ -10,12 +10,13 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
-  char name;
+  char *name;
 } Node;
 
 typedef struct {
   int ty;
   int val;
+  char *name;
   char *input;
 } Token;
 
